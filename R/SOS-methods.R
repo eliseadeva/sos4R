@@ -631,9 +631,18 @@ setMethod(f = "getObservationById",
 	if(isXMLString(.responseString)) {
 		if(verbose) cat("[.getObservation_1.0.0] Got XML string as response",
 					"(based on isXMLString()).\n")
-		
+	}
+	
+	.isXML <- (isXMLString(.responseString) ||
+						 	length(
+						 		grep(pattern = paste0(mimeTypesXML, collapse = "|"),
+						 				 .contentType)) > 0)
+	
+	if(.isXML) {
 		.hasSubtype <- FALSE
 		.contentSubtype <- NA
+		
+		# find out more about the content type
 		if(length(.contentType) < 1) {
 			if(verbose) cat("[.getObservation_1.0.0] No content type!",
 						"Falling back to '", mimeTypeXML, "'\n")
@@ -642,7 +651,7 @@ setMethod(f = "getObservationById",
 		else if(length(.contentType) > 1) {
 			# check if subtype is present or take just the first
 			.subtypeIdx <- which(names(.contentType) == "subtype")
-			if(.subtypeIdx > 0) {
+			if(length(.subtypeIdx) > 0 && .subtypeIdx > 0) {
 				.hasSubtype <- TRUE
 				.contentSubtype <- .contentType[[.subtypeIdx]]
 				if(verbose) cat("[.getObservation_1.0.0] Found mime subtype: ",
@@ -719,8 +728,13 @@ setMethod(f = "getObservationById",
 		
 		# calculate result length vector
 		if(inherits(.obs, "OmObservationCollection")) {
-			.resultLength <- sapply(sosResult(.obs, bind = FALSE,
-							coordinates = FALSE), nrow)
+			if(verbose) cat("[.getObservationById_1.0.0] Got OmObservationCollection", 
+											"... calculating length with sosResult()")
+				
+			.result <- sosResult(.obs, bind = FALSE, coordinates = FALSE)
+			if(verbose) cat("[.getObservationById_1.0.0] result: ", toString(.result))
+			
+			.resultLength <- sapply(.result, nrow)
 			if(length(.resultLength) == 0) # nothing
 				.resultLength = 0
 		}
